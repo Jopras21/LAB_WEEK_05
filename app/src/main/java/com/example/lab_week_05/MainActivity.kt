@@ -2,6 +2,7 @@ package com.example.lab_week_05
 
 import android.os.Bundle
 import android.util.Log
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.example.lab_week_05.api.CatApiService
@@ -11,9 +12,9 @@ import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
-import kotlin.getValue
-import android.widget.ImageView
+
 class MainActivity : AppCompatActivity() {
+
     private val retrofit by lazy {
         Retrofit.Builder()
             .baseUrl("https://api.thecatapi.com/v1/")
@@ -44,8 +45,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getCatImageResponse() {
-        val call = catApiService.searchImages(1, "full")
-
+        val call = catApiService.searchImages(1, "full", 1)
         call.enqueue(object : Callback<List<ImageData>> {
             override fun onFailure(call: Call<List<ImageData>>, t: Throwable) {
                 Log.e(MAIN_ACTIVITY, "Failed to get response", t)
@@ -53,18 +53,20 @@ class MainActivity : AppCompatActivity() {
 
             override fun onResponse(call: Call<List<ImageData>>, response: Response<List<ImageData>>) {
                 if (response.isSuccessful) {
-                    val imageList = response.body()
-                    val firstImage = imageList?.firstOrNull()?.imageUrl.orEmpty()
-                    if (firstImage.isNotBlank()) {
-                        imageLoader.loadImage(firstImage, imageResultView)
+                    val image = response.body()
+                    val firstImage = image?.firstOrNull()
+                    val imageUrl = firstImage?.imageUrl.orEmpty()
+                    val breedName = firstImage?.breeds?.firstOrNull()?.name ?: "Unknown"
+
+                    apiResponseView.text = getString(R.string.cat_breed_placeholder, breedName)
+
+                    if (imageUrl.isNotBlank()) {
+                        imageLoader.loadImage(imageUrl, imageResultView)
                     } else {
                         Log.d(MAIN_ACTIVITY, "Missing image URL")
                     }
                 } else {
-                    Log.e(
-                        MAIN_ACTIVITY,
-                        "Failed to get response\n" + response.errorBody()?.string().orEmpty()
-                    )
+                    Log.e(MAIN_ACTIVITY, "Failed to get response\n" + response.errorBody()?.string().orEmpty())
                 }
             }
         })
